@@ -44,8 +44,7 @@ public static class ShopSceneTweaks
             if (!PrefabUtility.IsPartOfPrefabInstance(customer)) changed |= SetInt(customer, "wrongReasonAmount", WrongReasonAmount);
         }
 
-        // The team's Wwise shop music (PLAY_SHOP_MUSIC) has no soundbanks in the repo, so it is silent. This plain
-        // Unity loop stands in; remove it once the Wwise banks are committed, or both will play.
+        // The shop uses this Unity loop directly; it is the project's only supplied shop audio clip.
         var clip = AssetDatabase.LoadAssetAtPath<AudioClip>(ShopMusicClip);
         if (clip == null) throw new System.InvalidOperationException($"Missing {ShopMusicClip}");
         var importer = (AudioImporter)AssetImporter.GetAtPath(ShopMusicClip);

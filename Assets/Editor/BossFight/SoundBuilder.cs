@@ -142,23 +142,33 @@ namespace BossFight.Editor
             return true;
         }
 
-        // The team's Wwise setup replaced the player camera's AudioListener with Wwise's own listener; the fight's
-        // sounds are Unity AudioSources, so the camera holding the sword needs a Unity listener as well.
-        // ShopShutdown switches the shop cameras' listeners off.
+        // The fight uses Unity AudioSources. Keep the listener on the player camera and turn every other listener
+        // in this scene off: Unity only supports one active AudioListener and otherwise 3D effects can be heard
+        // from a parked shop camera (or not at all).
         private static bool EnsurePlayerListener(UnityEngine.SceneManagement.Scene scene)
         {
             var sword = BuilderUtil.FindInScene<PlayerSword>(scene);
             var camera = sword != null ? sword.GetComponentInParent<Camera>(true) : null;
             if (camera == null) throw new System.InvalidOperationException("Boss Scene has no camera holding the PlayerSword");
             var listener = camera.GetComponent<AudioListener>();
+            bool changed = false;
             if (listener == null)
             {
                 camera.gameObject.AddComponent<AudioListener>();
-                return true;
+                listener = camera.GetComponent<AudioListener>();
+                changed = true;
             }
-            if (listener.enabled) return false;
-            listener.enabled = true;
-            return true;
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                foreach (var candidate in root.GetComponentsInChildren<AudioListener>(true))
+                {
+                    bool shouldEnable = candidate == listener;
+                    if (candidate.enabled == shouldEnable) continue;
+                    candidate.enabled = shouldEnable;
+                    changed = true;
+                }
+            }
+            return changed;
         }
 
         private static void AssignPrefab()

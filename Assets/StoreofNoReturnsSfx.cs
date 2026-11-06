@@ -1,15 +1,13 @@
 using UnityEngine;
 
 /// <summary>
-/// Centralized names and posting for the shop's Wwise SFX events.
-/// Keeping the audio calls here means the gameplay scripts only signal the
-/// moments at which a sound should play; they do not own audio assets.
+/// Backwards-compatible event names used by the shop gameplay scripts. The project now uses Unity AudioSource and
+/// AudioClip playback; the available shop clip is the looping music source in MainScene. The old event-only shop
+/// effects have no source audio files in this project, so their existing call sites intentionally do nothing rather
+/// than attempting to initialize or call Wwise at runtime.
 /// </summary>
 public static class StoreofNoReturnsSfx
 {
-    private const string MainSoundBank = "StoreofNoReturns_Main.bnk";
-    private static bool mainSoundBankRequested;
-    private static bool mainSoundBankMissing;
     public const string CustomerExcited = "PLAY_CUSTOMER_EXCITED";
     public const string CustomerDisappointed = "PLAY_CUSTOMER_DISSAPOINTED";
     public const string CustomerArrive = "PLAY_CUSTOMER_ARRIVE";
@@ -33,38 +31,9 @@ public static class StoreofNoReturnsSfx
     public const string ComputerInteract = "PLAY_COMPUTER_INTERACT";
     public const string GameOver = "PLAY_GAME_OVER";
 
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-    private static void PreloadMainSoundBank()
-    {
-        EnsureMainSoundBankLoaded();
-    }
-
     public static void Post(string eventName, GameObject emitter)
     {
-        if (emitter != null)
-        {
-            EnsureMainSoundBankLoaded();
-            if (mainSoundBankMissing) return;
-            AkUnitySoundEngine.PostEvent(eventName, emitter);
-        }
-    }
-
-    private static void EnsureMainSoundBankLoaded()
-    {
-        if (mainSoundBankRequested || !AkUnitySoundEngine.IsInitialized())
-        {
-            return;
-        }
-
-        mainSoundBankRequested = true;
-        // The generated soundbanks aren't in the repo yet (2026-10-23); without this check every run logged
-        // "Bank StoreofNoReturns_Main.bnk failed to load (AK_FileNotFound)". Commit the banks to bring sound back.
-        string basePath = AkBasePathGetter.Get().SoundBankBasePath;
-        if (string.IsNullOrEmpty(basePath) || !System.IO.File.Exists(System.IO.Path.Combine(basePath, MainSoundBank)))
-        {
-            mainSoundBankMissing = true;
-            return;
-        }
-        AkBankManager.LoadBank(MainSoundBank, false, false);
+        // Retained so existing gameplay scripts compile while source clips for these former Wwise-only events are
+        // unavailable. Unity AudioSources handle every audio file that is present in Assets/Audio.
     }
 }
