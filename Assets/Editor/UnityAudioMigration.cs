@@ -15,6 +15,20 @@ public static class UnityAudioMigration
 {
     private const string ShopScene = "Assets/Scenes/Scenes in Game/MainScene.unity";
     private const string ShopMusicPath = "Assets/Audio/Shop/shop_music_very_crunchy.wav";
+    private const string ShopSfxDirectory = "Assets/Resources/ShopSfx";
+    private static readonly string[] RequiredShopSfx =
+    {
+        StoreofNoReturnsSfx.CustomerExcited, StoreofNoReturnsSfx.CustomerDisappointed,
+        StoreofNoReturnsSfx.CustomerArrive, StoreofNoReturnsSfx.CustomerEntryDoor,
+        StoreofNoReturnsSfx.CustomerEntryChime, StoreofNoReturnsSfx.ReputationDown,
+        StoreofNoReturnsSfx.ReputationUp, StoreofNoReturnsSfx.AccusationWrong,
+        StoreofNoReturnsSfx.AccusationCorrect, StoreofNoReturnsSfx.UiConfirm,
+        StoreofNoReturnsSfx.UiDeny, StoreofNoReturnsSfx.UiChoice, StoreofNoReturnsSfx.UiBack,
+        StoreofNoReturnsSfx.UiAdvance, StoreofNoReturnsSfx.UiOpenDialogue,
+        StoreofNoReturnsSfx.FlashlightOff, StoreofNoReturnsSfx.FlashlightOn,
+        StoreofNoReturnsSfx.PlayerFootstep, StoreofNoReturnsSfx.ComputerInteract,
+        StoreofNoReturnsSfx.GameOver
+    };
 
     [MenuItem("Tools/Audio/Migrate Gameplay Scenes to Unity Audio")]
     public static void Run()
@@ -81,11 +95,19 @@ public static class UnityAudioMigration
             if (!sceneDependencies.Contains(audioPath)) errors.Add($"Unreferenced Unity audio clip: {audioPath}");
         }
 
+        // Resources clips are loaded by StoreofNoReturnsSfx at runtime, so AssetDatabase cannot show them as scene
+        // dependencies. Verify the complete recovered event set by its stable event names instead.
+        foreach (var eventName in RequiredShopSfx)
+        {
+            var clip = AssetDatabase.LoadAssetAtPath<AudioClip>($"{ShopSfxDirectory}/{eventName}.wav");
+            if (clip == null) errors.Add($"Missing Unity shop sound effect for {eventName}");
+        }
+
         if (errors.Count > 0)
         {
             throw new InvalidOperationException("Unity audio validation failed:\n- " + string.Join("\n- ", errors));
         }
-        Debug.Log("Unity audio validation passed: every imported AudioClip is referenced by a build scene, and each build scene has one Unity AudioListener.");
+        Debug.Log("Unity audio validation passed: scene clips, recovered Resources shop effects, and one Unity AudioListener per build scene are all present.");
     }
 
     private static bool RemoveLegacyWwiseComponents(Scene scene)
